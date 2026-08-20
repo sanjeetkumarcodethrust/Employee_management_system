@@ -26,8 +26,8 @@ const AdminDashboard = () => {
             </div>
             </div>
           
-            <div className='w-1/2'>
-                <h3>Task Description</h3>
+            <div className='w-2/5 flex flex-col items-start'>
+                <h3 className='text-sm text-gray-300 m-0.5'>Task Description</h3>
             <textarea name="" id="" rows="4" cols="50"></textarea>
             </div>
            <button>Create Task</button>
