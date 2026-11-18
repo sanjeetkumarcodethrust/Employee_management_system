@@ -1,0 +1,13 @@
+{
+  "name": "employee-management-system-workspace",
+  "private": true,
+  "workspaces": [
+    "EMPLOYEE_MANAGEMENT_SYSTEM"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=employee-management-system",
+    "build": "npm run build --workspace=employee-management-system",
+    "lint": "npm run lint --workspace=employee-management-system",
+    "preview": "npm run preview --workspace=employee-management-system"
+  }
+}
