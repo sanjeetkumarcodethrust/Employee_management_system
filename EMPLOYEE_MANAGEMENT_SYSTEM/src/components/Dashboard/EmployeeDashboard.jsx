@@ -3,9 +3,10 @@ import Header from '../other/Header';
 import TaskListNumber from '../other/TaskListNumber';
 import TaskList from '../../TaskList/TaskList';
 import { AuthContext } from '../../context/AuthContext';
+import { apiUpdateTaskStatus } from '../../services/api';
 
 const EmployeeDashboard = ({ data, changeUser }) => {
-  const { userData, setUserData } = useContext(AuthContext);
+  const { userData, setUserData, refreshUserData } = useContext(AuthContext);
   const [employeeData, setEmployeeData] = useState(data);
 
   // Keep employeeData synchronized with latest userData or incoming data prop
@@ -20,9 +21,25 @@ const EmployeeDashboard = ({ data, changeUser }) => {
     }
   }, [userData, data, employeeData?.id]);
 
-  const handleUpdateStatus = (taskIndex, nextStatus) => {
+  const handleUpdateStatus = async (taskIndex, nextStatus) => {
     if (!employeeData) return;
 
+    // 1. Try Backend API
+    const apiRes = await apiUpdateTaskStatus(employeeData.id, taskIndex, nextStatus);
+
+    if (apiRes && apiRes.success && apiRes.employee) {
+      setEmployeeData(apiRes.employee);
+      if (refreshUserData) {
+        await refreshUserData();
+      }
+      localStorage.setItem(
+        'loggedInUser',
+        JSON.stringify({ role: 'employee', data: apiRes.employee })
+      );
+      return;
+    }
+
+    // 2. Fallback to local update if backend offline
     const tasks = [...(employeeData.tasks || [])];
     const task = { ...tasks[taskIndex] };
     const taskNumbers = {
@@ -56,7 +73,6 @@ const EmployeeDashboard = ({ data, changeUser }) => {
 
     setEmployeeData(updatedEmployee);
 
-    // Update global context & local storage
     if (userData) {
       const updatedAll = userData.map((emp) =>
         emp.id === updatedEmployee.id ? updatedEmployee : emp

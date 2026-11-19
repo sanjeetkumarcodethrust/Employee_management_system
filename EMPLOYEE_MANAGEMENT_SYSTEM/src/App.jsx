@@ -3,11 +3,12 @@ import Login from './components/Auth/Login';
 import EmployeeDashboard from './components/Dashboard/EmployeeDashboard';
 import AdminDashboard from './components/Dashboard/AdminDashboard';
 import { AuthContext } from './context/AuthContext';
+import { apiLogin } from './services/api';
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [loggedInUserData, setLoggedInUserData] = useState(null);
-  const { userData } = useContext(AuthContext);
+  const { userData, refreshUserData } = useContext(AuthContext);
 
   useEffect(() => {
     const loggedInUserStr = localStorage.getItem('loggedInUser');
@@ -27,8 +28,39 @@ const App = () => {
     }
   }, []);
 
-  const handleLogin = (email, password) => {
-    // Admin login check
+  const handleLogin = async (email, password) => {
+    // 1. Try Backend API login
+    const apiResult = await apiLogin(email, password);
+
+    if (apiResult && apiResult.success) {
+      if (apiResult.role === 'admin') {
+        setUser('admin');
+        localStorage.setItem(
+          'loggedInUser',
+          JSON.stringify({ role: 'admin', user: apiResult.user })
+        );
+        refreshUserData();
+        return true;
+      }
+
+      if (apiResult.role === 'employee') {
+        setUser('employee');
+        setLoggedInUserData(apiResult.user);
+        localStorage.setItem(
+          'loggedInUser',
+          JSON.stringify({ role: 'employee', data: apiResult.user })
+        );
+        refreshUserData();
+        return true;
+      }
+    }
+
+    // If backend returned explicit authentication error
+    if (apiResult && !apiResult.networkError && apiResult.message) {
+      return false;
+    }
+
+    // 2. Fallback to local authentication if backend is offline
     if (
       (email === 'admin@me.com' || email === 'admin@example.com') &&
       password === '123'
@@ -38,7 +70,6 @@ const App = () => {
       return true;
     }
 
-    // Employee login check
     if (userData && Array.isArray(userData)) {
       const employee = userData.find(
         (emp) => emp.email === email && emp.password === password

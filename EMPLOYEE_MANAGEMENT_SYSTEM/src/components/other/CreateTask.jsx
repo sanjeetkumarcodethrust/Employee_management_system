@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { apiCreateTask } from '../../services/api';
 
 const CreateTask = () => {
-  const { userData, setUserData } = useContext(AuthContext);
+  const { userData, setUserData, refreshUserData } = useContext(AuthContext);
 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDate, setTaskDate] = useState('');
@@ -10,8 +11,9 @@ const CreateTask = () => {
   const [category, setCategory] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submitHandler = (e) => {
+  const submitHandler = async (e) => {
     e.preventDefault();
 
     if (!taskTitle.trim() || !taskDate || !assignTo.trim() || !category.trim() || !taskDescription.trim()) {
@@ -19,11 +21,43 @@ const CreateTask = () => {
       return;
     }
 
-    const newTask = {
+    setIsSubmitting(true);
+
+    const taskPayload = {
       title: taskTitle.trim(),
       description: taskDescription.trim(),
       date: taskDate,
       category: category.trim(),
+      assignTo: assignTo.trim(),
+    };
+
+    // 1. Try backend API
+    const apiRes = await apiCreateTask(taskPayload);
+
+    if (apiRes && apiRes.success) {
+      if (refreshUserData) {
+        await refreshUserData();
+      }
+      setTaskTitle('');
+      setTaskDate('');
+      setAssignTo('');
+      setCategory('');
+      setTaskDescription('');
+      setIsSubmitting(false);
+      setStatusMessage({ type: 'success', text: `Task created and synced with backend for ${assignTo}!` });
+
+      setTimeout(() => {
+        setStatusMessage({ type: '', text: '' });
+      }, 4000);
+      return;
+    }
+
+    // 2. Fallback to local state if backend is offline
+    const newTask = {
+      title: taskPayload.title,
+      description: taskPayload.description,
+      date: taskPayload.date,
+      category: taskPayload.category,
       active: false,
       newTask: true,
       completed: false,
@@ -54,6 +88,8 @@ const CreateTask = () => {
       return emp;
     });
 
+    setIsSubmitting(false);
+
     if (!assigned) {
       const availableNames = employees.map((e) => e.firstName).join(', ');
       setStatusMessage({
@@ -71,7 +107,7 @@ const CreateTask = () => {
     setAssignTo('');
     setCategory('');
     setTaskDescription('');
-    setStatusMessage({ type: 'success', text: `Task successfully assigned to ${assignTo}!` });
+    setStatusMessage({ type: 'success', text: `Task assigned locally to ${assignTo}!` });
 
     setTimeout(() => {
       setStatusMessage({ type: '', text: '' });
@@ -185,9 +221,10 @@ const CreateTask = () => {
 
           <button
             type='submit'
-            className='w-full bg-emerald-600 hover:bg-emerald-700 active:scale-98 transition-all text-white font-semibold py-3 px-6 rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-2'
+            disabled={isSubmitting}
+            className='w-full bg-emerald-600 hover:bg-emerald-700 active:scale-98 transition-all text-white font-semibold py-3 px-6 rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50'
           >
-            <span>+</span> Assign Task
+            <span>+</span> {isSubmitting ? 'Assigning...' : 'Assign Task'}
           </button>
         </div>
       </form>
