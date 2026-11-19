@@ -1,13 +1,18 @@
 {
   "name": "employee-management-system-workspace",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "workspaces": [
-    "EMPLOYEE_MANAGEMENT_SYSTEM"
+    "EMPLOYEE_MANAGEMENT_SYSTEM",
+    "backend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=employee-management-system",
-    "build": "npm run build --workspace=employee-management-system",
-    "lint": "npm run lint --workspace=employee-management-system",
-    "preview": "npm run preview --workspace=employee-management-system"
+    "dev": "node dev.js",
+    "dev:frontend": "cd EMPLOYEE_MANAGEMENT_SYSTEM && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd EMPLOYEE_MANAGEMENT_SYSTEM && npm run build",
+    "lint:frontend": "cd EMPLOYEE_MANAGEMENT_SYSTEM && npm run lint",
+    "start:backend": "cd backend && npm start"
   }
 }
